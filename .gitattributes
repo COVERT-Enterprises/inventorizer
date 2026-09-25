@@ -1,0 +1,2 @@
+# Consistent line endings: LF in the repository and on checkout.
+* text=auto eol=lf

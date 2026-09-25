@@ -1,0 +1,28 @@
+{
+  "_comment": "Template for the hosted version.json the Inventorizer update engine polls. Host this file anywhere (GitHub raw URL works), then set UpdateUrl in the $Brand block of Inventorizer.ps1 to its URL. 'version' is the latest available build; 'scriptUrl' is the raw download of that build's Inventorizer.ps1; 'sha256' (optional but recommended) is the hash of that file - get it with: Get-FileHash .\\Inventorizer.ps1 -Algorithm SHA256. 'highlights' are the big-ticket items shown on the update offer screen; 'notes' are the in-depth small fixes shown in the full changelog. List newest entries first; the updater shows every entry newer than the running version.",
+  "version": "26.2.0",
+  "scriptUrl": "https://raw.githubusercontent.com/YOURNAME/YOURREPO/main/Inventorizer.ps1",
+  "sha256": "",
+  "changelog": [
+    {
+      "version": "26.2.0",
+      "date": "2026-08-01",
+      "highlights": [
+        "NEW :: example major feature the user is missing out on",
+        "REWORKED :: example of a majorly reworked system"
+      ],
+      "notes": [
+        "fixed the bug with the video driver listing function incorrectly displaying AMD driver versions",
+        "adjusted the density bar timing on slow terminals"
+      ]
+    },
+    {
+      "version": "26.1.1",
+      "date": "2026-07-25",
+      "highlights": [],
+      "notes": [
+        "patch releases usually only carry notes - they still appear in the full changelog view"
+      ]
+    }
+  ]
+}
