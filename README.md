@@ -7,6 +7,8 @@ report), diffs snapshots over time, and generates a winget **restore script**
 that can rebuild a fresh PC. Build strings follow
 `v<version> (<platform>) <arch>`, e.g. `v26.2.0 (Windows) x64`.
 
+> 🤖 Brought to GitHub with the help of **[Claude Code](https://claude.com/claude-code)** (Anthropic) — repository setup, structure, documentation, and releases.
+
 ## Quick start
 
 > **Download:** grab the latest build from the [Releases](../../releases) page and unzip it (or clone the repo), then:
@@ -202,6 +204,10 @@ The console is designed to be un-brickable by configuration:
   `[ LIMITED ]` in their reports.
 - Reports may include hostnames, usernames, MAC/IP addresses and installed
   software lists. Treat snapshots as private before sharing them.
+
+## Acknowledgments
+
+- **[Claude Code](https://claude.com/claude-code)** (Anthropic) — helped bring COVERT PC Inventorizer to GitHub: repository structure, documentation, release packaging, and publishing.
 
 ## License
 
