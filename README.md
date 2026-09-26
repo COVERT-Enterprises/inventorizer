@@ -8,6 +8,7 @@ that can rebuild a fresh PC. Build strings follow
 `v<version> (<platform>) <arch>`, e.g. `v26.2.0 (Windows) x64`.
 
 > 🤖 Brought to GitHub with the help of **[Claude Code](https://claude.com/claude-code)** by Anthropic.
+
 ## Quick start
 
 > **Download:** grab the latest build from the [Releases](../../releases) page and unzip it (or clone the repo), then:
