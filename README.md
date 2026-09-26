@@ -7,8 +7,7 @@ report), diffs snapshots over time, and generates a winget **restore script**
 that can rebuild a fresh PC. Build strings follow
 `v<version> (<platform>) <arch>`, e.g. `v26.2.0 (Windows) x64`.
 
-*🤖 [Claude](https://claude.com/claude-code) by Anthropic helped with the port to GitHub.*
-
+> 🤖 Brought to GitHub with the help of **[Claude Code](https://claude.com/claude-code)** by Anthropic.
 ## Quick start
 
 > **Download:** grab the latest build from the [Releases](../../releases) page and unzip it (or clone the repo), then:
