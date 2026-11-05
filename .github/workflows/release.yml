@@ -4,78 +4,130 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version number, e.g. 26.7.4 (no 'v' needed)"
+        description: "New version number, e.g. 26.7.4 (the script's version line is updated for you)"
         required: true
         type: string
+      platform:
+        description: "Platform, shown in the release title and download name"
+        required: true
+        type: choice
+        options:
+          - Windows
+          - Linux
+          - macOS
+        default: Windows
+      title:
+        description: "Custom release title (leave empty for: Inventorizer v<version> (<platform>))"
+        required: false
+        type: string
+        default: ""
       prerelease:
-        description: "Mark as a pre-release / beta? (pre-releases aren't offered through the in-app updater)"
+        description: "Pre-release / beta"
         required: true
         type: boolean
         default: false
+      offer_update:
+        description: "Offer it to existing users through the in-app updater (stable releases only)"
+        required: true
+        type: boolean
+        default: true
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  PRODUCT: Inventorizer
+  SCRIPT: Inventorizer.ps1
+
 jobs:
-  release:
-    runs-on: ubuntu-latest
+  check:
+    name: Check the script on Windows PowerShell 5.1
+    runs-on: windows-latest
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Check the version and build the update manifest
+      - name: Parse the script
+        shell: powershell
+        run: |
+          $tokens = $null; $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD $env:SCRIPT), [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            foreach ($e in $errors) { Write-Host "::error file=$($env:SCRIPT),line=$($e.Extent.StartLineNumber)::$($e.Message)" }
+            exit 1
+          }
+          Write-Host "$($env:SCRIPT) parses cleanly on Windows PowerShell $($PSVersionTable.PSVersion)."
+
+  release:
+    name: Publish the release
+    needs: check
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      PLATFORM: ${{ inputs.platform }}
+      TITLE: ${{ inputs.title }}
+      PRERELEASE: ${{ inputs.prerelease }}
+      OFFER_UPDATE: ${{ inputs.offer_update }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Check the inputs and prepare the release
+        id: prep
+        run: python3 .github/scripts/release.py prepare
+
+      - name: Commit the new version number
+        if: steps.prep.outputs.bumped == 'true'
+        env:
+          NEW_VERSION: ${{ steps.prep.outputs.version }}
         run: |
           set -euo pipefail
-          VERSION="${{ github.event.inputs.version }}"
-          python3 .github/scripts/build_version_json.py "${VERSION#v}" "$GITHUB_REPOSITORY"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$SCRIPT"
+          git commit -m "Set version to $NEW_VERSION"
+          git push origin "HEAD:$GITHUB_REF_NAME"
 
       - name: Build the download package
         id: build
+        env:
+          PACKAGE: ${{ steps.prep.outputs.package }}
         run: |
           set -euo pipefail
-          VERSION="${{ github.event.inputs.version }}"
-          VERSION="${VERSION#v}"
-          TAG="v${VERSION}"
-          PKG="COVERT-PC-Inventorizer-${TAG}"
-          mkdir -p "dist/${PKG}"
-          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.gitattributes' --exclude='version.json' --exclude='dist' ./ "dist/${PKG}/"
-          ( cd dist && zip -r "${PKG}.zip" "${PKG}" >/dev/null )
-          {
-            echo "tag=${TAG}"
-            echo "version=${VERSION}"
-            echo "zip=dist/${PKG}.zip"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Extract release notes from CHANGELOG.md
-        run: |
-          set -euo pipefail
-          awk -v target="## v${{ steps.build.outputs.version }}" '
-            /^## v/ { if (found) exit; found = (index($0, target) == 1) }
-            found  { print }
-          ' CHANGELOG.md > notes.md
-          if [ ! -s notes.md ]; then
-            echo "COVERT PC Inventorizer ${{ steps.build.outputs.tag }}" > notes.md
-          fi
+          mkdir -p "$RUNNER_TEMP/dist/$PACKAGE"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.gitattributes' --exclude='version.json' ./ "$RUNNER_TEMP/dist/$PACKAGE/"
+          ( cd "$RUNNER_TEMP/dist" && zip -qr "$PACKAGE.zip" "$PACKAGE" )
+          echo "zip=$RUNNER_TEMP/dist/$PACKAGE.zip" >> "$GITHUB_OUTPUT"
 
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.prep.outputs.tag }}
+          RELEASE_TITLE: ${{ steps.prep.outputs.title }}
+          ZIP: ${{ steps.build.outputs.zip }}
         run: |
           set -euo pipefail
-          EXTRA=""
-          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then EXTRA="--prerelease"; fi
-          gh release create "${{ steps.build.outputs.tag }}" "${{ steps.build.outputs.zip }}" --title "COVERT PC Inventorizer ${{ steps.build.outputs.tag }}" --notes-file notes.md $EXTRA
+          args=(--target "$(git rev-parse HEAD)" --title "$RELEASE_TITLE" --notes-file "$RUNNER_TEMP/notes.md")
+          if [ "$PRERELEASE" = "true" ]; then args+=(--prerelease); fi
+          gh release create "$TAG" "$ZIP" "${args[@]}"
 
       - name: Publish the update manifest (version.json)
-        if: ${{ github.event.inputs.prerelease != 'true' }}
+        if: steps.prep.outputs.update_manifest == 'true'
+        env:
+          TAG: ${{ steps.prep.outputs.tag }}
         run: |
           set -euo pipefail
+          python3 .github/scripts/release.py manifest
           git add version.json
           if git diff --cached --quiet; then
             echo "version.json is already up to date."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git commit -m "Update version.json for ${{ steps.build.outputs.tag }}"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+            git commit -m "Update version.json for $TAG"
+            git push origin "HEAD:$GITHUB_REF_NAME"
           fi
