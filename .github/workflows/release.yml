@@ -35,10 +35,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: release
-  cancel-in-progress: false
-
 env:
   PRODUCT: Inventorizer
   SCRIPT: Inventorizer.ps1
