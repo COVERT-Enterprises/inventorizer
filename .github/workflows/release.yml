@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number, e.g. 26.3.0 (no 'v' needed)"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as a pre-release / beta?"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Build the download package
+        id: build
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${VERSION#v}"
+          TAG="v${VERSION}"
+          PKG="COVERT-PC-Inventorizer-${TAG}"
+          mkdir -p "dist/${PKG}"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.gitattributes' --exclude='dist' ./ "dist/${PKG}/"
+          ( cd dist && zip -r "${PKG}.zip" "${PKG}" >/dev/null )
+          {
+            echo "tag=${TAG}"
+            echo "version=${VERSION}"
+            echo "zip=dist/${PKG}.zip"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          set -euo pipefail
+          awk -v target="## v${{ steps.build.outputs.version }}" '
+            /^## v/ { if (found) exit; found = (index($0, target) == 1) }
+            found  { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then
+            echo "COVERT PC Inventorizer ${{ steps.build.outputs.tag }}" > notes.md
+          fi
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          EXTRA=""
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then EXTRA="--prerelease"; fi
+          gh release create "${{ steps.build.outputs.tag }}" "${{ steps.build.outputs.zip }}" --title "COVERT PC Inventorizer ${{ steps.build.outputs.tag }}" --notes-file notes.md $EXTRA

@@ -1,0 +1,22 @@
+# --- COVERT PC Inventorizer: runtime & user-specific artifacts ---
+
+# Auto-created, self-repairing user settings
+config/settings.json
+config/settings.backup.json
+config/settings.corrupt.json
+config/backup/
+
+# Snapshot output (may contain hostnames, usernames, IP/MAC, installed-software lists)
+snapshots/
+
+# Logs
+*.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*~
+.vscode/
+.idea/
