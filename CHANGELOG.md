@@ -12,6 +12,17 @@ changelog come straight from here.
 
 ---
 
+## v26.7.5 — 2026-11-05
+
+### Highlights
+- UPDATES :: tidier update news, and time to read the result before Inventorizer restarts
+
+### Notes
+- the update screen and the full changelog now wrap long entries into neat, indented lines instead of running across the whole window, with the category tag (e.g. INPUT ::) picked out in colour
+- an update that spans several versions shows its first four highlights; the rest are one key away in the full changelog
+- after a successful update, a short countdown shows what happened before Inventorizer reopens; press any key to restart right away
+- you'll see these from the next update on: an update is always run by the version you're updating from
+
 ## v26.7.4 — 2026-11-05
 
 ### Highlights

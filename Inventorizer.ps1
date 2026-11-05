@@ -4040,18 +4040,80 @@ function Test-ForUpdate {
     }
 }
 
+function Split-WrapText([string]$Text, [int]$Width) {
+    # Word-wraps $Text into lines of at most $Width characters (a longer word stands alone).
+    $lines = @(); $line = ''
+    foreach ($word in ($Text -split '\s+')) {
+        if (-not $word) { continue }
+        if (-not $line) { $line = $word }
+        elseif (($line.Length + 1 + $word.Length) -le $Width) { $line = $line + ' ' + $word }
+        else { $lines += $line; $line = $word }
+    }
+    if ($line) { $lines += $line }
+    return $lines
+}
+
+function Write-ChangeList([object[]]$Items, [string]$Mark, [string]$MarkRole, [string]$BodyRole, [int]$Width, [int]$Pad = -1, [switch]$Spaced) {
+    # Changelog items as a word-wrapped list: continuation lines indent under the
+    # text, and a leading 'TAG ::' (e.g. 'INPUT ::') is picked out in the accent
+    # colour. With no -Pad the list is centered as one block; -Spaced puts a blank
+    # line between items.
+    $blocks = @(); $maxw = 0
+    foreach ($it in $Items) {
+        $t = ("$it").Trim()
+        if (-not $t) { continue }
+        $lines = @(Split-WrapText $t $Width)
+        $blocks += ,$lines
+        foreach ($l in $lines) { if ($l.Length -gt $maxw) { $maxw = $l.Length } }
+    }
+    $lead = $Mark + '  '
+    if ($Pad -ge 0) { $left = ' ' * $Pad } else { $left = Get-CenterPad ($maxw + $lead.Length) }
+    for ($b = 0; $b -lt $blocks.Count; $b++) {
+        if ($Spaced -and $b -gt 0) { Write-Host '' }
+        $lines = $blocks[$b]
+        $tag = ''
+        if ($lines[0] -cmatch '^([A-Z0-9][A-Z0-9 &+/-]*::)( |$)') { $tag = $Matches[1] }
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            $line = $lines[$i]
+            if ($i -eq 0) { $head = Get-RoleColor $MarkRole $lead } else { $head = ' ' * $lead.Length }
+            if ($i -eq 0 -and $tag) { $body = (Get-Accent $tag) + (Get-RoleColor $BodyRole $line.Substring($tag.Length)) }
+            else { $body = Get-RoleColor $BodyRole $line }
+            Write-Host ($left + $head + $body)
+        }
+    }
+}
+
+function Show-Countdown([int]$Seconds, [string]$Format) {
+    # A centered line that counts down in place ($Format gets the seconds left, e.g.
+    # 'relaunching in {0}s'). Any key ends it early: time to read what's on screen
+    # without making anyone wait.
+    Clear-KeyBuffer
+    for ($s = $Seconds; $s -ge 1; $s--) {
+        $msg = $Format -f $s
+        Write-Host -NoNewline ("`r" + (Get-CenterPad $msg.Length) + (Get-Faint $msg) + '   ')
+        $until = [DateTime]::Now.AddSeconds(1)
+        while ([DateTime]::Now -lt $until) {
+            if (Test-KeyAvailable) { Clear-KeyBuffer; Write-Host ''; return }
+            Start-Sleep -Milliseconds 40
+        }
+    }
+    Write-Host ''
+}
+
 function Show-ChangelogScreen($Upd) {
     Clear-Host
     Write-Host ''
     Write-GradLine '::  FULL CHANGELOG  ::' -Center
     Write-DimLine ('every build between v' + $Script:Brand.Version + ' and v' + $Upd.Latest) -Center
     Write-Host ''
+    $width = [Math]::Max(40, [Math]::Min((Get-ConWidth) - 16, 84))
+    $pad = (Get-CenterPad ($width + 5)).Length
     foreach ($e in @($Upd.Entries)) {
         $date = ''
-        if ($e.date) { $date = '   (' + "$($e.date)" + ')' }
-        Write-Host ('  ' + (Format-GradientText ('v' + ("$($e.version)".TrimStart('v', 'V')) + $date)))
-        foreach ($h in @($e.highlights)) { if ("$h") { Write-Host ('    ' + (Get-Accent ('*  ' + "$h"))) } }
-        foreach ($nt in @($e.notes))     { if ("$nt") { Write-Host ('    ' + (Get-Dim    ('-  ' + "$nt"))) } }
+        if ($e.date) { $date = '   ' + "$($e.date)" }
+        Write-Host ((' ' * $pad) + (Format-GradientText ('v' + ("$($e.version)".TrimStart('v', 'V')))) + (Get-Faint $date))
+        Write-ChangeList @($e.highlights) '*' 'Accent' 'Txt' $width ($pad + 2)
+        Write-ChangeList @($e.notes) '-' 'Dim' 'Dim' $width ($pad + 2)
         Write-Host ''
     }
     Write-FaintLine 'any key to return' -Center
@@ -4103,8 +4165,10 @@ function Invoke-SelfUpdate($Upd) {
         Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue
         Write-DimLine ('previous build archived -> config\backup\Inventorizer_v' + $Script:Brand.Version + '.ps1') -Center
         Write-Host ''
-        Write-GradLine ('::  UPDATED TO v' + $Upd.Latest + '  //  RELAUNCHING  ::') -Center
-        Start-Sleep -Milliseconds 1100
+        Write-GradLine ('::  UPDATED TO v' + $Upd.Latest + '  ::') -Center
+        Write-DimLine 'Inventorizer reopens in a new window' -Center
+        Write-Host ''
+        Show-Countdown 8 'relaunching in {0}s  //  any key to relaunch now'
         Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', ('"{0}"' -f $PSCommandPath))
         exit
     } catch {
@@ -4124,10 +4188,11 @@ function Show-UpdateScreen($Upd) {
         if (@($Upd.Highlights).Count -gt 0) {
             Write-DimLine 'what this machine is missing out on:' -Center
             Write-Host ''
-            $maxw = 0
-            foreach ($h in $Upd.Highlights) { if ("$h".Length -gt $maxw) { $maxw = "$h".Length } }
-            $pad = Get-CenterPad ($maxw + 3)
-            foreach ($h in $Upd.Highlights) { Write-Host ($pad + (Get-Accent ('>  ' + "$h"))) }
+            $width = [Math]::Max(40, [Math]::Min((Get-ConWidth) - 16, 76))
+            $shown = @($Upd.Highlights | Select-Object -First 4)
+            Write-ChangeList $shown '>' 'Accent' 'Txt' $width -Spaced
+            $more = @($Upd.Highlights).Count - $shown.Count
+            if ($more -gt 0) { Write-Host ''; Write-FaintLine ('... and {0} more in the full changelog' -f $more) -Center }
             Write-Host ''
         }
         Write-FaintLine '[U] update now  //  [C] full changelog  //  [S] skip this version  //  any key later' -Center
