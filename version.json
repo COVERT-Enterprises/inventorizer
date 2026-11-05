@@ -1,9 +1,25 @@
 {
   "_comment": "Generated from CHANGELOG.md by the Release workflow. Edit CHANGELOG.md, not this file.",
-  "version": "26.7.3",
-  "scriptUrl": "https://raw.githubusercontent.com/COVERT-Enterprises/inventorizer/v26.7.3/Inventorizer.ps1",
-  "sha256": "D703DC8C2EBF7F7521D86F55B0047336B26894B927097C554DC4714D91887292",
+  "version": "26.7.4",
+  "scriptUrl": "https://raw.githubusercontent.com/COVERT-Enterprises/inventorizer/v26.7.4/Inventorizer.ps1",
+  "sha256": "F5D9020E8DC357CEE684C95F7965268F15F288419985DAE1282BE3B65B19C5F0",
+  "packageUrl": "https://github.com/COVERT-Enterprises/inventorizer/releases/download/v26.7.4/Inventorizer-Windows.zip",
+  "packageSha256": "7903E3C985FB6F9359E73EA4CA8959F7FF9055C0A8D1856175FF42718BC23586",
   "changelog": [
+    {
+      "version": "26.7.4",
+      "date": "2026-11-05",
+      "highlights": [
+        "INPUT :: typed fields no longer pick up earlier answers. Holding Right at the end of a snapshot note (or any other text field) used to paste in characters from the last line typed in that window, such as your tagline, and Up / F7 could bring back old entries. Inventorizer now draws its own input line, so the arrow keys only move through what you typed."
+      ],
+      "notes": [
+        "applies to every typed prompt: snapshot notes, machine alias, tagline, output folder, search, and custom-theme hex colors",
+        "keys: Left/Right and Home/End move, Ctrl+Left/Right jump a word, Backspace/Delete erase (Ctrl+Backspace a whole word), Esc clears the line, Enter accepts; text longer than the line scrolls sideways instead of wrapping",
+        "the cause was the Windows console's own line editing (its Right/F1 \"template\" recall and command history), which Read-Host inherits",
+        "the first release delivered through the in-app updater \u2014 v26.7.3 offers it on launch",
+        "downloads are now named without the version (Inventorizer-Windows.zip) and unzip to a single folder, so the folder name doesn't go stale after an in-app update"
+      ]
+    },
     {
       "version": "26.7.3",
       "date": "2026-11-05",
