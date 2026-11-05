@@ -1,0 +1,43 @@
+name: Check
+
+# Runs the Windows checks on every push to main (and on demand), so a change
+# shows a green tick or a red cross long before anyone presses Release.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SCRIPT: Inventorizer.ps1
+
+jobs:
+  check:
+    name: Check the script on Windows PowerShell 5.1
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Parse the script
+        shell: powershell
+        run: |
+          $tokens = $null; $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile((Join-Path $PWD $env:SCRIPT), [ref]$tokens, [ref]$errors)
+          if ($errors.Count -gt 0) {
+            foreach ($e in $errors) { Write-Host "::error file=$($env:SCRIPT),line=$($e.Extent.StartLineNumber)::$($e.Message)" }
+            exit 1
+          }
+          Write-Host "$($env:SCRIPT) parses cleanly on Windows PowerShell $($PSVersionTable.PSVersion)."
+
+      - name: Run the self-test
+        if: hashFiles('.github/scripts/test.ps1') != ''
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/test.ps1
