@@ -105,7 +105,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/dist/$PACKAGE"
           rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.gitattributes' --exclude='version.json' ./ "$RUNNER_TEMP/dist/$PACKAGE/"
-          ( cd "$RUNNER_TEMP/dist" && zip -qr "$PACKAGE.zip" "$PACKAGE" )
+          ( cd "$RUNNER_TEMP/dist/$PACKAGE" && zip -qr "../$PACKAGE.zip" . )
           echo "zip=$RUNNER_TEMP/dist/$PACKAGE.zip" >> "$GITHUB_OUTPUT"
 
       - name: Publish the GitHub release

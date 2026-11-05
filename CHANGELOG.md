@@ -22,6 +22,7 @@ changelog come straight from here.
 - keys: Left/Right and Home/End move, Ctrl+Left/Right jump a word, Backspace/Delete erase (Ctrl+Backspace a whole word), Esc clears the line, Enter accepts; text longer than the line scrolls sideways instead of wrapping
 - the cause was the Windows console's own line editing (its Right/F1 "template" recall and command history), which `Read-Host` inherits
 - the first release delivered through the in-app updater — v26.7.3 offers it on launch
+- downloads are now named without the version (`Inventorizer-Windows.zip`) and unzip to a single folder, so the folder name doesn't go stale after an in-app update
 
 ## v26.7.3 — 2026-11-05
 

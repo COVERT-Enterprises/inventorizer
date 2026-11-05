@@ -129,7 +129,7 @@ def prepare():
     notes.write_text("\n".join(section["body"]).strip() + "\n", encoding="utf-8")
 
     title = setting("TITLE") or f"{product} v{version} ({platform})"
-    package = f"{product}-v{version}-{platform}"
+    package = f"{product}-{platform}"  # no version: the unzipped folder never goes stale after an in-app update
     update_url = UPDATE_URL_LINE.search(source)
     has_updater = bool(update_url and update_url.group(1).strip())
     offer = setting("OFFER_UPDATE") == "true" and not prerelease and has_updater
