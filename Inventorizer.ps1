@@ -61,10 +61,10 @@ $Script:Brand = @{
     Short     = 'INVENTORIZER'
     Sigil     = 'CxT'
     Tagline   = 'TOTAL SYSTEM AWARENESS'
-    Version   = '26.7.2'
+    Version   = '26.7.3'
     Platform  = 'Windows'
     Arch      = ''
-    UpdateUrl = ''   # point at a hosted version.json when the repo goes live (see update-manifest.sample.json)
+    UpdateUrl = 'https://raw.githubusercontent.com/COVERT-Enterprises/inventorizer/main/version.json'   # update manifest; regenerated from CHANGELOG.md by the Release workflow
 }
 
 # Machine architecture (WOW64-aware); unreadable -> product-flavored failsafe placeholder

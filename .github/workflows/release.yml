@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Version number, e.g. 26.3.0 (no 'v' needed)"
+        description: "Version number, e.g. 26.7.4 (no 'v' needed)"
         required: true
         type: string
       prerelease:
-        description: "Mark as a pre-release / beta?"
+        description: "Mark as a pre-release / beta? (pre-releases aren't offered through the in-app updater)"
         required: true
         type: boolean
         default: false
@@ -23,6 +23,12 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      - name: Check the version and build the update manifest
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.event.inputs.version }}"
+          python3 .github/scripts/build_version_json.py "${VERSION#v}" "$GITHUB_REPOSITORY"
+
       - name: Build the download package
         id: build
         run: |
@@ -32,7 +38,7 @@ jobs:
           TAG="v${VERSION}"
           PKG="COVERT-PC-Inventorizer-${TAG}"
           mkdir -p "dist/${PKG}"
-          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.gitattributes' --exclude='dist' ./ "dist/${PKG}/"
+          rsync -a --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.gitattributes' --exclude='version.json' --exclude='dist' ./ "dist/${PKG}/"
           ( cd dist && zip -r "${PKG}.zip" "${PKG}" >/dev/null )
           {
             echo "tag=${TAG}"
@@ -59,3 +65,17 @@ jobs:
           EXTRA=""
           if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then EXTRA="--prerelease"; fi
           gh release create "${{ steps.build.outputs.tag }}" "${{ steps.build.outputs.zip }}" --title "COVERT PC Inventorizer ${{ steps.build.outputs.tag }}" --notes-file notes.md $EXTRA
+
+      - name: Publish the update manifest (version.json)
+        if: ${{ github.event.inputs.prerelease != 'true' }}
+        run: |
+          set -euo pipefail
+          git add version.json
+          if git diff --cached --quiet; then
+            echo "version.json is already up to date."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Update version.json for ${{ steps.build.outputs.tag }}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

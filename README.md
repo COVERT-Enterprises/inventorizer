@@ -125,10 +125,10 @@ downloading the new build, verifying its sha256 and syntax, archiving the old
 version to `config\backup\`, and relaunching. You can skip a version, or turn
 the check off entirely in SETTINGS.
 
-The channel is **not configured yet**: when you have a repo, host a
-`version.json` (format documented in `update-manifest.sample.json`) plus the
-raw `Inventorizer.ps1`, and put the manifest URL into `UpdateUrl` in the
-`$Brand` block at the top of the script.
+The channel is this repository: `UpdateUrl` points at [`version.json`](version.json),
+which the Release workflow regenerates from `CHANGELOG.md` on every release (format
+documented in `update-manifest.sample.json`). Builds before v26.7.3 never check for
+updates, so download v26.7.3 or later once and future versions arrive in-app.
 
 ## Configuration
 

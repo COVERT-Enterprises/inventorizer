@@ -11,6 +11,15 @@ the in-app updater builds its "what you're missing" list and full changelog from
 
 ---
 
+## v26.7.3 — 2026-11-05
+
+### Highlights
+- UPDATES :: the update channel is live — on launch, Inventorizer now checks for a newer build and can **update itself in one key**: it downloads the new script, verifies its sha256 and syntax, archives the old build to `config\backup\`, and relaunches. Skip a version, or switch the check off entirely, in SETTINGS.
+
+### Notes
+- `UpdateUrl` now points at `version.json` in the COVERT-Enterprises/inventorizer repository; the release workflow regenerates it from this changelog on every release
+- builds before v26.7.3 never check for updates — download v26.7.3 once, and later versions arrive in-app
+
 ## v26.7.2 — 2026-07-22
 
 ### Highlights
