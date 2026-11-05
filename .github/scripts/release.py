@@ -6,11 +6,13 @@
             version is malformed, already released, lower than the script's
             current version, or has no section in CHANGELOG.md.
   manifest  Writes version.json, the file the in-app updater reads, from
-            CHANGELOG.md (newest first) and the released script's sha256.
+            CHANGELOG.md (newest first), the released script's sha256, and the
+            download package's address and sha256.
 
 The workflow passes its settings as environment variables: PRODUCT, SCRIPT,
-VERSION, PLATFORM, TITLE, PRERELEASE and OFFER_UPDATE, plus GitHub's own
-GITHUB_REPOSITORY, GITHUB_OUTPUT, GITHUB_STEP_SUMMARY and RUNNER_TEMP.
+VERSION, PLATFORM, TITLE, PRERELEASE and OFFER_UPDATE (plus ZIP, the built
+package, for manifest), and GitHub's own GITHUB_REPOSITORY, GITHUB_OUTPUT,
+GITHUB_STEP_SUMMARY and RUNNER_TEMP.
 """
 import hashlib
 import json
@@ -162,6 +164,9 @@ def prepare():
 
 def manifest():
     script, version = Path(setting("SCRIPT")), requested_version()
+    package = Path(setting("ZIP"))
+    if not setting("ZIP") or not package.is_file():
+        fail("The download package wasn't found, so the update manifest can't list it.")
     source = script.read_bytes()
     if script_version(source).group(1).decode() != version:
         fail(f"{script} isn't at version {version}, so its update manifest can't be built.")
@@ -169,11 +174,14 @@ def manifest():
     sections.sort(key=lambda s: version_key(s["version"]), reverse=True)
     if not sections or sections[0]["version"] != version:
         fail(f"CHANGELOG.md has no '## v{version}' section.")
+    repo = setting("GITHUB_REPOSITORY")
     data = {
         "_comment": MANIFEST_NOTE,
         "version": version,
-        "scriptUrl": f"https://raw.githubusercontent.com/{setting('GITHUB_REPOSITORY')}/v{version}/{script.name}",
+        "scriptUrl": f"https://raw.githubusercontent.com/{repo}/v{version}/{script.name}",
         "sha256": hashlib.sha256(source).hexdigest().upper(),
+        "packageUrl": f"https://github.com/{repo}/releases/download/v{version}/{package.name}",
+        "packageSha256": hashlib.sha256(package.read_bytes()).hexdigest().upper(),
         "changelog": [manifest_entry(s) for s in sections],
     }
     MANIFEST.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

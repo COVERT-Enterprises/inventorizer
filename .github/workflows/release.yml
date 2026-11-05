@@ -62,6 +62,11 @@ jobs:
           }
           Write-Host "$($env:SCRIPT) parses cleanly on Windows PowerShell $($PSVersionTable.PSVersion)."
 
+      - name: Run the self-test
+        if: hashFiles('.github/scripts/test.ps1') != ''
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .github/scripts/test.ps1
+
   release:
     name: Publish the release
     needs: check
@@ -119,6 +124,7 @@ jobs:
         if: steps.prep.outputs.update_manifest == 'true'
         env:
           TAG: ${{ steps.prep.outputs.tag }}
+          ZIP: ${{ steps.build.outputs.zip }}
         run: |
           set -euo pipefail
           python3 .github/scripts/release.py manifest
