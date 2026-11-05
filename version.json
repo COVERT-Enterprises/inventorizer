@@ -1,11 +1,24 @@
 {
   "_comment": "Generated from CHANGELOG.md by the Release workflow. Edit CHANGELOG.md, not this file.",
-  "version": "26.7.4",
-  "scriptUrl": "https://raw.githubusercontent.com/COVERT-Enterprises/inventorizer/v26.7.4/Inventorizer.ps1",
-  "sha256": "F5D9020E8DC357CEE684C95F7965268F15F288419985DAE1282BE3B65B19C5F0",
-  "packageUrl": "https://github.com/COVERT-Enterprises/inventorizer/releases/download/v26.7.4/Inventorizer-Windows.zip",
-  "packageSha256": "7903E3C985FB6F9359E73EA4CA8959F7FF9055C0A8D1856175FF42718BC23586",
+  "version": "26.7.5",
+  "scriptUrl": "https://raw.githubusercontent.com/COVERT-Enterprises/inventorizer/v26.7.5/Inventorizer.ps1",
+  "sha256": "C7F87A9FF77B5943DC0EE2F3591A12A480CD356F9552A4029802F0D8FAF82FA4",
+  "packageUrl": "https://github.com/COVERT-Enterprises/inventorizer/releases/download/v26.7.5/Inventorizer-Windows.zip",
+  "packageSha256": "7D8D90C7B6952958F7C1D99EE7F56F38650DF0FE0BA52EE3BFCFCFAF5CAF5224",
   "changelog": [
+    {
+      "version": "26.7.5",
+      "date": "2026-11-05",
+      "highlights": [
+        "UPDATES :: tidier update news, and time to read the result before Inventorizer restarts"
+      ],
+      "notes": [
+        "the update screen and the full changelog now wrap long entries into neat, indented lines instead of running across the whole window, with the category tag (e.g. INPUT ::) picked out in colour",
+        "an update that spans several versions shows its first four highlights; the rest are one key away in the full changelog",
+        "after a successful update, a short countdown shows what happened before Inventorizer reopens; press any key to restart right away",
+        "you'll see these from the next update on: an update is always run by the version you're updating from"
+      ]
+    },
     {
       "version": "26.7.4",
       "date": "2026-11-05",
