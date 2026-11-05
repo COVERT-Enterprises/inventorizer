@@ -155,15 +155,86 @@ function Get-CenterPad([int]$Len) {
     return (' ' * $p)
 }
 
+function Read-ConsoleLine {
+    # One line of typed input, drawn by the script itself instead of Read-Host.
+    # The console's own line editor carries earlier answers into later prompts:
+    # Right at the end of the text pastes in characters from the previous line
+    # typed in this window, and Up / F7 bring back old entries. Here the arrow
+    # keys only move through what was typed. Keys: Left/Right and Home/End move
+    # (Ctrl+Left/Right by word), Backspace/Delete erase (Ctrl+Backspace a word),
+    # Esc clears the line, Enter accepts. Text longer than the line scrolls
+    # sideways instead of wrapping. Throws when there is no console keyboard
+    # (input redirected), so callers can fall back to Read-Host.
+    $buf = New-Object System.Text.StringBuilder
+    $pos = 0; $off = 0; $shown = 0
+    $left = [Console]::CursorLeft; $top = [Console]::CursorTop
+    if ([Math]::Min([Console]::BufferWidth, [Console]::WindowWidth) - $left -lt 16) {
+        Write-Host ''; Write-Host -NoNewline '  '
+        $left = [Console]::CursorLeft; $top = [Console]::CursorTop
+    }
+    while ($true) {
+        $text = $buf.ToString()
+        try {
+            $w = [Math]::Max(1, [Math]::Min([Console]::BufferWidth, [Console]::WindowWidth) - $left - 1)
+            if ($text.Length - $off -lt $w) { $off = [Math]::Max(0, $text.Length - $w) }
+            if ($pos -lt $off) { $off = $pos }
+            if ($pos - $off -gt $w) { $off = $pos - $w }
+            $vis = $text.Substring($off, [Math]::Min($w, $text.Length - $off))
+            [Console]::SetCursorPosition($left, $top)
+            [Console]::Write($vis.PadRight([Math]::Min($shown, $w)))
+            $shown = $vis.Length
+            [Console]::SetCursorPosition($left + $pos - $off, $top)
+        } catch { }
+        while (-not [Console]::KeyAvailable) { Start-Sleep -Milliseconds 20 }
+        $k = [Console]::ReadKey($true)
+        $ctrl = ($k.Modifiers -band [ConsoleModifiers]::Control) -ne 0
+        if ($k.Key -eq [ConsoleKey]::Enter) { break }
+        if ($k.Key -eq [ConsoleKey]::Escape) { [void]$buf.Clear(); $pos = 0 }
+        elseif ($k.Key -eq [ConsoleKey]::LeftArrow) {
+            if (-not $ctrl) { if ($pos -gt 0) { $pos-- } }
+            else {
+                while ($pos -gt 0 -and $text[$pos - 1] -eq ' ') { $pos-- }
+                while ($pos -gt 0 -and $text[$pos - 1] -ne ' ') { $pos-- }
+            }
+        }
+        elseif ($k.Key -eq [ConsoleKey]::RightArrow) {
+            if (-not $ctrl) { if ($pos -lt $text.Length) { $pos++ } }
+            else {
+                while ($pos -lt $text.Length -and $text[$pos] -ne ' ') { $pos++ }
+                while ($pos -lt $text.Length -and $text[$pos] -eq ' ') { $pos++ }
+            }
+        }
+        elseif ($k.Key -eq [ConsoleKey]::Home) { $pos = 0 }
+        elseif ($k.Key -eq [ConsoleKey]::End) { $pos = $text.Length }
+        elseif ($k.Key -eq [ConsoleKey]::Backspace) {
+            $from = $pos
+            if (-not $ctrl) { if ($from -gt 0) { $from-- } }
+            else {
+                while ($from -gt 0 -and $text[$from - 1] -eq ' ') { $from-- }
+                while ($from -gt 0 -and $text[$from - 1] -ne ' ') { $from-- }
+            }
+            if ($from -lt $pos) { [void]$buf.Remove($from, $pos - $from); $pos = $from }
+        }
+        elseif ($k.Key -eq [ConsoleKey]::Delete) { if ($pos -lt $text.Length) { [void]$buf.Remove($pos, 1) } }
+        elseif ($k.KeyChar -ne [char]0 -and -not [char]::IsControl($k.KeyChar)) {
+            [void]$buf.Insert($pos, [string]$k.KeyChar); $pos++
+        }
+    }
+    Write-Host ''
+    return $buf.ToString()
+}
+
 function Read-InvPrompt([string]$Prompt) {
-    # A Read-Host whose prompt is indented toward center (like the identity block:
+    # Typed input whose prompt is indented toward center (like the identity block:
     # centered as a group, text still reading left-to-right) instead of hugging
     # the far-left edge. Handles the cursor visibility toggle for callers.
     $width = $Prompt.Length + 26
     if ($width -lt 48) { $width = 48 }
     try { [Console]::CursorVisible = $true } catch { }
     Write-Host -NoNewline (Get-CenterPad $width)
-    $v = Read-Host $Prompt
+    Write-Host -NoNewline ($Prompt + ': ')
+    try { $v = Read-ConsoleLine }
+    catch { Write-Host ''; $v = Read-Host $Prompt }   # no console keyboard (input redirected)
     try { [Console]::CursorVisible = $false } catch { }
     return $v
 }

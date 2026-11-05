@@ -6,10 +6,22 @@ Versioning follows the **COVERT scheme: `vYY.MAJOR.PATCH`**
 - `MAJOR` — feature release counter within the year: new categories, new systems, major reworks.
 - `PATCH` — small fixes and adjustments within that major release.
 
-Keep this file in sync with the hosted `version.json` (see `update-manifest.sample.json`) —
-the in-app updater builds its "what you're missing" list and full changelog from that manifest.
+The Release workflow builds the hosted `version.json` (format in `update-manifest.sample.json`)
+from this file on every release, so the in-app updater's "what you're missing" list and full
+changelog come straight from here.
 
 ---
+
+## v26.7.4 — 2026-11-05
+
+### Highlights
+- INPUT :: typed fields no longer pick up earlier answers. Holding **Right** at the end of a snapshot note (or any other text field) used to paste in characters from the last line typed in that window, such as your tagline, and **Up** / **F7** could bring back old entries. Inventorizer now draws its own input line, so the arrow keys only move through what you typed.
+
+### Notes
+- applies to every typed prompt: snapshot notes, machine alias, tagline, output folder, search, and custom-theme hex colors
+- keys: Left/Right and Home/End move, Ctrl+Left/Right jump a word, Backspace/Delete erase (Ctrl+Backspace a whole word), Esc clears the line, Enter accepts; text longer than the line scrolls sideways instead of wrapping
+- the cause was the Windows console's own line editing (its Right/F1 "template" recall and command history), which `Read-Host` inherits
+- the first release delivered through the in-app updater — v26.7.3 offers it on launch
 
 ## v26.7.3 — 2026-11-05
 
